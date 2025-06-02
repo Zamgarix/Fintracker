@@ -12,6 +12,9 @@ def get_csv_directory():
     file_path = input("Please provide the directory path of the CSV file: ")
     if not os.path.isfile(file_path):
         raise FileNotFoundError("The provided file path does not exist.")
+    # Note: If you encounter errors with file paths containing special non-ASCII characters,
+    # please ensure your operating system's locale is configured to support UTF-8.
+    # Alternatively, try using file paths that only contain standard ASCII characters.
     return file_path
 
 
@@ -19,7 +22,12 @@ def load_data(file_path):
     """
     Read the CSV file into a pandas DataFrame and validate the data.
     """
-    df = pd.read_csv(file_path)
+    try:
+        df = pd.read_csv(file_path, encoding='utf-8')
+    except FileNotFoundError:
+        raise FileNotFoundError("Error: The file was not found at the specified path. Please check the path and try again.")
+    except UnicodeDecodeError:
+        raise ValueError("Error: The file is not encoded in UTF-8. Please ensure the CSV file is saved with UTF-8 encoding and try again.")
     # Check for missing values
     if df.isnull().values.any():
         raise ValueError("The dataset contains missing values. Please clean the data and try again.")
@@ -44,7 +52,7 @@ def scenario_analysis(df):
     scenarios['increase_income'] = df['amount'][df['type'] == 'income'].sum() * 1.10
     scenarios['decrease_expense'] = df['amount'][df['type'] == 'expense'].sum() * 0.90
     print("Scenario Analysis:\n", scenarios)
-    with open("scenario_analysis.csv", "w") as f:
+    with open("scenario_analysis.csv", "w", encoding="utf-8") as f:
         for key, value in scenarios.items():
             f.write(f"{key},{value}\n")
     return scenarios
