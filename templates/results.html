@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Finance Analysis Results</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        h1, h2 { color: #333; }
+        .section { margin-bottom: 30px; padding: 15px; border: 1px solid #eee; border-radius: 5px; }
+        .section h2 { margin-top: 0; }
+        table { border-collapse: collapse; width: auto; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        img { max-width: 100%; height: auto; border: 1px solid #ddd; margin-top:10px;}
+        .plotly-dashboard { margin-top: 20px; }
+        .error { color: red; border: 1px solid red; padding: 10px; }
+        a.back-link { display: block; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Finance Analysis Results</h1>
+
+    {% if error %}
+        <div class="error">
+            <h2>Error</h2>
+            <p>{{ error }}</p>
+        </div>
+    {% else %}
+        <div class="section">
+            <h2>Summary Statistics</h2>
+            {% if summary_html %}
+                {{ summary_html | safe }}
+            {% else %}
+                <p>No summary statistics available.</p>
+            {% endif %}
+        </div>
+
+        <div class="section">
+            <h2>Scenario Analysis</h2>
+            {% if scenarios %}
+                <ul>
+                    {% for scenario_name, value in scenarios.items() %}
+                        <li><strong>{{ scenario_name | replace('_', ' ') | title }}:</strong> {{ "%.2f" | format(value) }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No scenario analysis available.</p>
+            {% endif %}
+        </div>
+
+        <div class="section">
+            <h2>Exploratory Data Analysis Plots</h2>
+            {% if plots %}
+                {% if plots.bar_plot %}
+                    <h3>Income and Expenses by Category</h3>
+                    <img src="{{ url_for('static', filename=plots.bar_plot) }}" alt="Income and Expenses by Category">
+                {% endif %}
+                {% if plots.line_plot %}
+                    <h3>Expenses Over Time</h3>
+                    <img src="{{ url_for('static', filename=plots.line_plot) }}" alt="Expenses Over Time">
+                {% else %}
+                     <p>Expenses over time plot not generated (possibly no expense data).</p>
+                {% endif %}
+            {% else %}
+                <p>No plots available.</p>
+            {% endif %}
+        </div>
+
+        <div class="section">
+            <h2>Interactive Dashboard</h2>
+            {% if interactive_dashboard_html %}
+                <div class="plotly-dashboard">
+                    {{ interactive_dashboard_html | safe }}
+                </div>
+            {% else %}
+                <p>No interactive dashboard available.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <a href="{{ url_for('index') }}" class="back-link">Go Back to Upload</a>
+</body>
+</html>
