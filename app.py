@@ -1,3 +1,30 @@
+"""
+Finance Tracker Web Application
+
+To run this application:
+
+1.  **Set up a virtual environment (recommended):**
+    python -m venv venv
+    # On Windows:
+    # venv\Scripts\activate
+    # On macOS/Linux:
+    # source venv/bin/activate
+
+2.  **Install dependencies:**
+    pip install -r requirements.txt
+
+3.  **Run the Flask application:**
+    python app.py
+
+4.  **Open your web browser and navigate to:**
+    http://127.0.0.1:5000/
+
+This application allows you to upload a CSV file or paste CSV-formatted text
+containing financial data (expected columns: 'date', 'category', 'amount', 'type').
+It then performs various analyses and displays them on a results page,
+including summary statistics, scenario analysis, data visualizations,
+and an interactive dashboard.
+"""
 import io
 import pandas as pd
 from flask import Flask, render_template, request
@@ -112,6 +139,10 @@ def analyze_data():
     uploaded_file = request.files.get('csv_file')
     pasted_data = request.form.get('csv_text')
     df = None
+    summary_df = None
+    scenarios_dict = None
+    plot_paths_dict = None
+    dashboard_html_output = None
 
     try:
         if uploaded_file and uploaded_file.filename:
@@ -119,21 +150,25 @@ def analyze_data():
         elif pasted_data and pasted_data.strip():
             df = load_data(pasted_data, is_file=False)
         else:
-            return "No data provided. Please upload a CSV file or paste CSV data.", 400
+            return render_template('results.html', error="No data provided. Please upload a CSV file or paste CSV data."), 400
 
         summary_df = summary_analysis(df)
         scenarios_dict = scenario_analysis(df)
-        plot_paths_dict = exploratory_data_analysis(df)
+        plot_paths_dict = exploratory_data_analysis(df) # This saves plots to static/
         dashboard_html_output = create_interactive_dashboard(df)
-        
-        return f"Data loaded. Summary: {summary_df.shape}, Scenarios: {len(scenarios_dict)}, Plots: {len(plot_paths_dict)}, Dashboard HTML generated: {len(dashboard_html_output) > 0}"
 
-    except ValueError as e:
-        # Errors from load_data or the new analysis functions
-        return str(e), 400 # Bad Request
-    except Exception as e:
-        # Other unexpected errors
-        return f"An unexpected error occurred: {str(e)}", 500
+        return render_template('results.html',
+                               summary_html=summary_df.to_html(classes='table table-striped'),
+                               scenarios=scenarios_dict,
+                               plots=plot_paths_dict,
+                               interactive_dashboard_html=dashboard_html_output,
+                               error=None)
+
+    except ValueError as e: # Catches errors from load_data and analysis functions
+        return render_template('results.html', error=str(e)), 400
+    except Exception as e: # Catch any other unexpected errors
+        app.logger.error(f"Unexpected error during analysis: {e}", exc_info=True)
+        return render_template('results.html', error="An unexpected server error occurred. Please check logs or contact support."), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
